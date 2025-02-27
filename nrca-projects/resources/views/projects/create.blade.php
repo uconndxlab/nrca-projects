@@ -1,5 +1,5 @@
 @extends('layouts.app')
-
+@section('title', 'Add New Project')
 @section('content')
     <div class="container">
         <h1 class="mb-4">Add New Project</h1>
@@ -22,13 +22,19 @@
             {{-- Year --}}
             <div class="mb-3">
                 <label class="form-label">Year</label>
-                <input type="number" name="year" class="form-control" min="1900" max="{{ date('Y') }}" value="{{ old('year') }}" required>
+                <input type="number" name="year" class="form-control" value="{{ old('year') }}" required>
             </div>
 
             {{-- County --}}
             <div class="mb-3">
                 <label class="form-label">County</label>
-                <input type="text" name="county" class="form-control" value="{{ old('county') }}" required>
+                <select name="county" class="form-select" required>
+                    <option value="">Select County</option>
+                    {{-- Assuming $counties is an array of county names --}}
+                    @foreach($counties as $county)
+                        <option value="{{ $county }}" {{ old('county') == $county ? 'selected' : '' }}>{{ $county }}</option>
+                    @endforeach
+                </select>
             </div>
 
             {{-- Thumbnail Image --}}
@@ -43,10 +49,23 @@
                 <input type="file" name="primary_product" class="form-control">
             </div>
 
+
+            {{-- Primary Product URL (Optional) --}}
+            <div class="mb-3">
+                <label class="form-label">Primary Product URL (Optional)</label>
+                <input type="url" name="primary_product_url" class="form-control" value="{{ old('primary_product_url') }}">
+            </div>
+
             {{-- Secondary Product (File Upload or URL) --}}
             <div class="mb-3">
                 <label class="form-label">Secondary Product (Optional)</label>
                 <input type="file" name="secondary_product" class="form-control">
+            </div>
+
+            {{-- Secondary Product URL (Optional) --}}
+            <div class="mb-3">
+                <label class="form-label ">Secondary Product URL (Optional)</label>
+                <input type="url" name="secondary_product_url" class="form-control" value="{{ old('secondary_product_url') }}">
             </div>
 
             {{-- Categories --}}

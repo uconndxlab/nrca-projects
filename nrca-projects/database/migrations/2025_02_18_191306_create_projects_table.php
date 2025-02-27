@@ -22,6 +22,8 @@ return new class extends Migration
             $table->string('secondary_product')->nullable();
             $table->string('secondary_product_url')->nullable();
             $table->string('program')->nullable();
+
+
             $table->timestamps();
         });
 

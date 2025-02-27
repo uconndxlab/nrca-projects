@@ -1,0 +1,119 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap');
+
+body {
+    font-family: 'Roboto Slab', serif;
+    background-color: #f0f8ff; /* Light blue background */
+    color: #2f4f4f; /* Dark slate gray text */
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: #4682b4; /* Steel blue */
+    color: white;
+    padding: 1rem;
+    text-align: center;
+}
+
+nav {
+    background-color: #5f9ea0; /* Cadet blue */
+    padding: 1rem;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    margin: 0 1rem;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+main {
+    padding: 2rem;
+}
+
+footer {
+    background-color: #4682b4; /* Steel blue */
+    color: white;
+    text-align: center;
+    padding: 1rem;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+}
+
+.card-title {
+    font-size: 1rem;
+    color: #2f4f4f; /* Dark slate gray */
+    border-bottom-right-radius: 0px;
+}
+
+#projects-container .card {
+    transform: translateY(20px);
+    animation: fadeInUp 0.5s ease-in-out forwards;
+    opacity: 0;
+}
+
+@keyframes fadeInUp {
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+.card {
+    background-color: #ffffff; /* White */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 1rem;
+    transition: transform 0.2s;
+}
+.card:hover {
+    transform: scale(1.05);
+}
+.card img {
+    max-width: 100%;
+    border-radius: 8px;
+}
+.card-body {
+    padding: 1rem;
+}
+
+.card-text {
+    font-size: 1rem;
+    color: #696969; /* Dim gray */
+}
+.card-link {
+    color: #4682b4; /* Steel blue */
+    text-decoration: none;
+}
+.card-link:hover {
+    text-decoration: underline;
+}
+.card-footer {
+    background-color: #f0f8ff; /* Light blue */
+    border-top: 1px solid #e0e0e0;
+    padding: 0.5rem;
+}
+
+.card-footer a:hover {
+    text-decoration: underline;
+}
+
+.btn-primary {
+    background-color: #4682b4; /* Steel blue */
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 1rem;
+    margin: 0.5rem 0;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background-color: #5f9ea0; /* Cadet blue */
+}
