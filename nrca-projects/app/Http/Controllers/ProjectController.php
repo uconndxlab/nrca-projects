@@ -118,7 +118,7 @@ class ProjectController extends Controller
         $project->update($request->except(['thumbnail_image', 'primary_product', 'secondary_product']));
 
         if ($request->hasFile('thumbnail_image')) {
-            $project->thumbnail_image = $request->file('thumbnail_image')->store('thumbnails', 'public');
+            $project->thumbnail = $request->file('thumbnail_image')->store('thumbnails', 'public');
         }
 
         if ($request->hasFile('primary_product')) {
