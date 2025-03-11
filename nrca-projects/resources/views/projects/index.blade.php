@@ -10,14 +10,9 @@
         @endif
 
         {{-- Filter Form --}}
-        <form hx-boost="true" 
-        hx-trigger="change, keyup delay:500ms"
-        hx-target="#projects-container"
-        hx-select="#projects-container"
-        hx-swap="outerHTML"
-        hx-push-url="true"
-
-        method="GET" action="{{ route('projects.index') }}" class="mb-4">
+        <form hx-boost="true" hx-trigger="change, keyup delay:500ms" hx-target="#projects-container"
+            hx-select="#projects-container" hx-swap="outerHTML" hx-push-url="true" method="GET"
+            action="{{ route('projects.index') }}" class="mb-4">
             <div class="row g-2">
                 <div class="col">
                     <input type="text" name="search" class="form-control" placeholder="Search for a topic..."
@@ -70,20 +65,20 @@
 
                             @if ($project->categories->isNotEmpty())
                                 <div class="position-absolute top-0 start-0">
-                                @foreach ($project->categories as $category)
-                                    
-                                    <span class="badge bg-dark  m-2">{{ $category->name }}</span>
-                                @endforeach
+                                    @foreach ($project->categories as $category)
+                                        <span class="badge bg-dark  m-2">{{ $category->name }}</span>
+                                    @endforeach
                                 </div>
                             @endif
 
-                            <h5 class="card-title position-absolute bottom-0 mb-0 start-0 end-0 bg-dark text-white p-2" style="bottom: 0;">{{ $project->title }}</h5>
+                            <h5 class="card-title position-absolute bottom-0 mb-0 start-0 end-0 bg-dark text-white p-2"
+                                style="bottom: 0;">{{ $project->title }}</h5>
 
 
                         </div>
                         <div class="card-body">
                             {{-- Project Categories --}}
-                         
+
                             <p class="card-text"><strong>Program:</strong> {{ $project->program ?? 'N/A' }}</p>
                             <p class="card-text"><strong>Year:</strong> {{ $project->year }}</p>
                             <p class="card-text"><strong>County:</strong> {{ $project->county }}</p>
@@ -94,25 +89,41 @@
                             <div class="mb-2">
                                 @if ($project->primary_product_url || $project->primary_product)
                                     @if ($project->primary_product_url)
-                                        <a href="{{ $project->primary_product_url }}" target="_blank"
-                                            class="btn btn-primary btn-sm">View Project Website</a>
+                                        <a href="{{ $project->primary_product_url }}" target="_blank" class="btn btn-primary">
+                                            <i class="bi bi-link-45deg"></i> View Project Website
+                                        </a>
                                     @endif
 
                                     @if ($project->primary_product)
-                                        <a href="{{ asset('storage/' . $project->primary_product) }}" target="_blank"
-                                            class="btn btn-primary btn-sm">Download Poster</a>
+                                        <a href="{{ asset('storage/' . $project->primary_product) }}" target="_blank" class="btn btn-primary">
+                                            <i class="bi bi-file-earmark-arrow-down"></i> Download Poster
+                                        </a>
                                     @endif
                                 @endif
 
                                 @if ($project->secondary_product_url || $project->secondary_product)
                                     @if ($project->secondary_product_url)
-                                        <a href="{{ $project->secondary_product_url }}" target="_blank"
-                                            class="btn btn-secondary btn-sm">View View Secondary Website</a>
+                                        <a href="{{ $project->secondary_product_url }}" target="_blank" class="btn btn-secondary">
+                                            <i class="bi bi-link-45deg"></i> View Secondary Website
+                                        </a>
                                     @endif
 
                                     @if ($project->secondary_product)
-                                        <a href="{{ asset('storage/' . $project->secondary_product) }}" target="_blank"
-                                            class="btn btn-secondary btn-sm">Download Secondary Poster</a>
+                                        <a href="{{ asset('storage/' . $project->secondary_product) }}" target="_blank" class="btn btn-secondary">
+                                            <i class="bi bi-file-earmark-arrow-down"></i> Download #2
+                                        </a>
+                                    @endif
+                                @endif
+
+                                @if ($project->third_product_url || $project->third_product)
+                                    @if ($project->third_product_url)
+                                        <a href="{{ $project->third_product_url }}" target="_blank" class="btn btn-secondary">
+                                            <i class="bi bi-link-45deg"></i> View Third Website
+                                        </a>
+                                    @elseif ($project->third_product)
+                                        <a href="{{ asset('storage/' . $project->third_product) }}" target="_blank" class="btn btn-secondary">
+                                            <i class="bi bi-file-earmark-arrow-down"></i> Download #3
+                                        </a>
                                     @endif
                                 @endif
 
