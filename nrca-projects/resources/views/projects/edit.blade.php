@@ -2,9 +2,9 @@
 @section('title', 'Edit Project')
 @section('content')
     <div class="container">
-        <h1 class="mb-4">Edit Project</h1>
+        <h1 class="mb-4 text-center">Edit Project</h1>
 
-        <form action="{{ route('projects.update', $project->id) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('projects.update', $project->id) }}" method="POST" enctype="multipart/form-data" class="shadow p-4 rounded bg-light">
             @csrf
             @method('PUT')
 
@@ -31,7 +31,7 @@
                 <label class="form-label">County</label>
                 <select name="county" class="form-select" required>
                     <option value="">Select County</option>
-                    @foreach($counties as $county)
+                    @foreach ($counties as $county)
                         <option value="{{ $county }}" {{ old('county', $project->county) == $county ? 'selected' : '' }}>{{ $county }}</option>
                     @endforeach
                 </select>
@@ -41,12 +41,18 @@
             <div class="mb-3">
                 <label class="form-label">Thumbnail Image (Optional)</label>
                 <input type="file" name="thumbnail_image" class="form-control">
+                @if ($project->thumbnail)
+                    <img src="{{ asset('storage/' . $project->thumbnail) }}" class="img-fluid mt-2" alt="{{ $project->title }}">
+                @endif
             </div>
 
-            {{-- Primary Product (File Upload or URL) --}}
+            {{-- Primary Product --}}
             <div class="mb-3">
                 <label class="form-label">Primary Product (Optional)</label>
                 <input type="file" name="primary_product" class="form-control">
+                @if ($project->primary_product)
+                    <small>Current file: {{ $project->primary_product }}</small>
+                @endif
             </div>
 
             {{-- Primary Product URL (Optional) --}}
@@ -55,28 +61,43 @@
                 <input type="url" name="primary_product_url" class="form-control" value="{{ old('primary_product_url', $project->primary_product_url) }}">
             </div>
 
-            {{-- Secondary Product (File Upload or URL) --}}
+            {{-- Secondary Product --}}
             <div class="mb-3">
                 <label class="form-label">Secondary Product (Optional)</label>
                 <input type="file" name="secondary_product" class="form-control">
+                @if ($project->secondary_product)
+                    <small>Current file: {{ $project->secondary_product }}</small>
+                @endif
             </div>
 
             {{-- Secondary Product URL (Optional) --}}
             <div class="mb-3">
-                <label class="form-label ">Secondary Product URL (Optional)</label>
+                <label class="form-label">Secondary Product URL (Optional)</label>
                 <input type="url" name="secondary_product_url" class="form-control" value="{{ old('secondary_product_url', $project->secondary_product_url) }}">
+            </div>
+
+            {{-- Third Product --}}
+            <div class="mb-3">
+                <label class="form-label">Third Product (Optional)</label>
+                <input type="file" name="third_download" class="form-control">
+                @if ($project->third_download)
+                    <small>Current file: {{ $project->third_download }}</small>
+                @endif
+            </div>
+
+            {{-- Third Product URL (Optional) --}}
+            <div class="mb-3">
+                <label class="form-label">Third Product URL (Optional)</label>
+                <input type="url" name="third_download_url" class="form-control" value="{{ old('third_download_url', $project->third_download_url) }}">
             </div>
 
             {{-- Categories --}}
             <div class="mb-3">
                 <label class="form-label">Categories</label>
-                <div class="border p-3 rounded">
-                    @foreach($categories as $category)
+                <div class="border p-3 rounded bg-white">
+                    @foreach ($categories as $category)
                         <div class="form-check">
-                            <input type="checkbox" name="categories[]" value="{{ $category->id }}"
-                                   class="form-check-input"
-                                   id="category_{{ $category->id }}"
-                                   {{ in_array($category->id, old('categories', $project->categories->pluck('id')->toArray())) ? 'checked' : '' }}>
+                            <input type="checkbox" name="categories[]" value="{{ $category->id }}" class="form-check-input" id="category_{{ $category->id }}" {{ in_array($category->id, old('categories', $project->categories->pluck('id')->toArray())) ? 'checked' : '' }}>
                             <label class="form-check-label" for="category_{{ $category->id }}">{{ $category->name }}</label>
                         </div>
                     @endforeach
@@ -84,8 +105,10 @@
             </div>
 
             {{-- Submit Button --}}
-            <button type="submit" class="btn btn-success">Update Project</button>
-            <a href="{{ route('projects.index') }}" class="btn btn-secondary">Cancel</a>
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-success">Update Project</button>
+                <a href="{{ route('projects.index') }}" class="btn btn-secondary">Cancel</a>
+            </div>
         </form>
     </div>
 @endsection

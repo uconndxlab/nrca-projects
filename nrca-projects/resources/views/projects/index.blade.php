@@ -89,13 +89,13 @@
                             <div class="mb-2">
                                 @if ($project->primary_product_url || $project->primary_product)
                                     @if ($project->primary_product_url)
-                                        <a href="{{ $project->primary_product_url }}" target="_blank" class="btn btn-primary">
+                                        <a href="{{ $project->primary_product_url }}" target="_blank" class="btn btn-primary btn-block mb-2 w-100">
                                             <i class="bi bi-link-45deg"></i> View Project Website
                                         </a>
                                     @endif
 
                                     @if ($project->primary_product)
-                                        <a href="{{ asset('storage/' . $project->primary_product) }}" target="_blank" class="btn btn-primary">
+                                        <a href="{{ asset('storage/' . $project->primary_product) }}" target="_blank" class="btn btn-primary btn-block mb-2 w-100">
                                             <i class="bi bi-file-earmark-arrow-down"></i> Download Poster
                                         </a>
                                     @endif
@@ -103,30 +103,29 @@
 
                                 @if ($project->secondary_product_url || $project->secondary_product)
                                     @if ($project->secondary_product_url)
-                                        <a href="{{ $project->secondary_product_url }}" target="_blank" class="btn btn-secondary">
+                                        <a href="{{ $project->secondary_product_url }}" target="_blank" class="btn btn-secondary btn-block mb-2 w-100">
                                             <i class="bi bi-link-45deg"></i> View Secondary Website
                                         </a>
                                     @endif
 
                                     @if ($project->secondary_product)
-                                        <a href="{{ asset('storage/' . $project->secondary_product) }}" target="_blank" class="btn btn-secondary">
+                                        <a href="{{ asset('storage/' . $project->secondary_product) }}" target="_blank" class="btn btn-secondary btn-block mb-2 w-100">
                                             <i class="bi bi-file-earmark-arrow-down"></i> Download #2
                                         </a>
                                     @endif
                                 @endif
 
-                                @if ($project->third_product_url || $project->third_product)
-                                    @if ($project->third_product_url)
-                                        <a href="{{ $project->third_product_url }}" target="_blank" class="btn btn-secondary">
+                                @if ($project->third_download_url || $project->third_download)
+                                    @if ($project->third_download_url)
+                                        <a href="{{ $project->third_download_url }}" target="_blank" class="btn btn-secondary btn-block mb-2 w-100">
                                             <i class="bi bi-link-45deg"></i> View Third Website
                                         </a>
-                                    @elseif ($project->third_product)
-                                        <a href="{{ asset('storage/' . $project->third_product) }}" target="_blank" class="btn btn-secondary">
+                                    @elseif ($project->third_download)
+                                        <a href="{{ asset('storage/' . $project->third_download) }}" target="_blank" class="btn btn-third btn-block mb-2 w-100">
                                             <i class="bi bi-file-earmark-arrow-down"></i> Download #3
                                         </a>
                                     @endif
                                 @endif
-
                             </div>
                         </div>
 

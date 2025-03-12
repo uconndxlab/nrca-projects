@@ -63,6 +63,7 @@ class ProjectController extends Controller
             'thumbnail_image' => 'nullable|image|max:2048',
             'primary_product' => 'nullable|file|max:10000',
             'secondary_product' => 'nullable|file|max:10000',
+            'third_download' => 'nullable|file|max:10000',
         ]);
 
         $project = new Project($request->except(['thumbnail_image', 'primary_product', 'secondary_product']));
@@ -84,6 +85,14 @@ class ProjectController extends Controller
 
         if ($request->hasFile('secondary_product')) {
             $project->secondary_product = $request->file('secondary_product')->store('products', 'public');
+        }
+
+        if ($request->filled('third_download_url')) {
+            $project->third_download_url = $request->input('third_download_url');
+        }
+
+        if ($request->hasFile('third_download')) {
+            $project->third_download = $request->file('third_download')->store('products', 'public');
         }
 
 
@@ -137,12 +146,22 @@ class ProjectController extends Controller
             $project->secondary_product_url = $request->input('secondary_product_url');
         }
 
+        if ($request->filled('third_download_url')) {
+            $project->third_download_url = $request->input('third_download_url');
+        }
+
+        if ($request->hasFile('third_download')) {
+            $project->third_download = $request->file('third_download')->store('products', 'public');
+        }
+
         // Detach all categories first
         $project->categories()->detach();
         // Attach new categories if any are selected
         if ($request->has('categories')) {
             $project->categories()->attach($request->input('categories'));
         }
+
+        
 
         $project->save();
 

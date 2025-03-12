@@ -68,6 +68,20 @@
                 <input type="url" name="secondary_product_url" class="form-control" value="{{ old('secondary_product_url') }}">
             </div>
 
+            {{-- Thrid Product File or Upload URL --}}
+
+            <div class="mb-3">
+                <label class="form-label ">Third Product</label>
+                <input type="file" name="third_download" class="form-control" value="{{ old('third_download') }}">
+            </div>
+
+
+            {{-- Thrid Product URL (Optional) --}}
+            <div class="mb-3">
+                <label class="form-label ">Third Product URL (Optional)</label>
+                <input type="url" name="third_download_url" class="form-control" value="{{ old('third_download_url') }}">
+            </div>
+
             {{-- Categories --}}
             <div class="mb-3">
                 <label class="form-label">Categories</label>

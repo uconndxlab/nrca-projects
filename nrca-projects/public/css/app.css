@@ -111,6 +111,13 @@ footer {
     color: white;
 }
 
+.btn-primary:hover {
+    background-color: #0389A6;
+    border:1px solid #0389A6;
+    border-radius: 35px !important;
+    color: white;
+}
+
 .btn-secondary {
     background-color: #0389A6;
     border-radius: 35px !important;
@@ -118,9 +125,26 @@ footer {
     border:1px solid #0389A6;
 }
 
+.btn-secondary:hover {
+    background-color: #DA7B29;
+    border-radius: 35px !important;
+    padding: 5px 15px;
+    border:1px solid #DA7B29;
+    color:#fff;
+}
+
 .btn-third {
     background-color: #777;
     border-radius: 35px !important;
     padding: 5px 15px;
     border:1px solid #777;
+    color:#fff;
+}
+
+.btn-third:hover {
+    background-color: #DA7B29;
+    border-radius: 35px !important;
+    padding: 5px 15px;
+    border:1px solid #DA7B29;
+    color:#fff;
 }
