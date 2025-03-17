@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'netid'
     ];
 
     /**
@@ -43,6 +44,14 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    public function getAuthIdentifierName() {
+        return 'netid';
+    }
+    public function getAuthIdentifier() {
+        return $this->netid;
     }
 }

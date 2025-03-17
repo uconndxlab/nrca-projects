@@ -18,3 +18,12 @@ Route::get('/projects/filter', [ProjectController::class, 'filter'])->name('proj
 
 Route::resource('categories', CategoryController::class);
 
+Route::middleware('cas.auth')->group(function () {
+    Route::get('/up', function () {
+        return response()->json(['status' => 'up']);
+    });
+});
+
+Route::get('/logout', function () {
+    cas()->logout();
+})->name('logout');
