@@ -3,7 +3,11 @@
 @section('content')
     <div class="container">
         <h1 class="mb-4">Projects</h1>
+        @can('admin')
         <a href="{{ route('projects.create') }}" class="btn btn-primary mb-3">Add Project</a>
+        @endcan
+
+        {{-- Success Message --}}
 
         @if (session('success'))
             <div class="alert alert-success">{{ session('success') }}</div>
@@ -84,6 +88,7 @@
                             <p class="card-text"><strong>County:</strong> {{ $project->county }}</p>
                         </div>
 
+                        
                         <div class="card-footer">
                             {{-- Product Links --}}
                             <div class="mb-2">
@@ -128,7 +133,7 @@
                                 @endif
                             </div>
                         </div>
-
+                        @can('admin')
                         <div class="card-footer d-flex justify-content-between">
                             <a href="{{ route('projects.edit', $project) }}" class="btn btn-warning btn-sm">Edit</a>
                             <form action="{{ route('projects.destroy', $project) }}" method="POST"
@@ -138,6 +143,7 @@
                                 <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                             </form>
                         </div>
+                        @endcan
                     </div>
                 </div>
             @endforeach

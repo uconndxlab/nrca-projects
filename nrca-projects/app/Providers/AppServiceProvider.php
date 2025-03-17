@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,5 +37,10 @@ class AppServiceProvider extends ServiceProvider
 
         // Share counties with all views
         View::share('counties', $counties);
+
+        // Define an admin gate
+        Gate::define('admin', function ($user) {
+            return $user->is_admin;
+        });
     }
 }
