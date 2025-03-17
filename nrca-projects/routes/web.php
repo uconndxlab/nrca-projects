@@ -4,6 +4,9 @@ use App\Http\Controllers\ProjectController;
 
 use App\Http\Controllers\CategoryController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 Route::get('/', function () {
     return redirect()->route('projects.index');
@@ -26,11 +29,17 @@ Route::middleware('cas.auth')->group(function () {
     Route::put('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
     Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
 
+    Route::get('/admin', [ProjectController::class, 'index'])->name('admin');
+
     Route::get('/up', function () {
         return response()->json(['status' => 'up']);
     });
 });
 
-Route::get('/logout', function () {
+Route::get('/logout', function (Request $request) {
+    Auth::logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
     cas()->logout();
+    return redirect(cas()->logout()); // Redirect to CAS logout page
 })->name('logout');
