@@ -17,7 +17,7 @@ class ImportProjectsFromJson extends Command
      *
      * @var string
      */
-    protected $signature = 'import:projects-json {--file=database/data/nrca-projects.json} {--dry-run : Show what would be imported without actually importing} {--skip-assets : Skip downloading assets}';
+    protected $signature = 'import:projects-json {--file=database/data/nrca-projects.json} {--dry-run : Show what would be imported without actually importing} {--skip-assets : Skip downloading assets} {--chunk-size=10 : Number of projects to process at once}';
 
     /**
      * The console command description.
@@ -87,73 +87,96 @@ class ImportProjectsFromJson extends Command
             $this->info('DRY RUN MODE - No data will be imported');
         }
 
+        // Get chunk size
+        $chunkSize = (int) $this->option('chunk-size');
+        $this->info("Processing in chunks of {$chunkSize} projects");
+
         // Create categories if they don't exist
         $this->createCategories($isDryRun);
 
-        // Start database transaction
-        if (!$isDryRun) {
-            DB::beginTransaction();
-        }
+        // Process projects in chunks to manage memory
+        $totalProjects = count($projects);
+        $chunks = array_chunk($projects, $chunkSize);
+        $totalChunks = count($chunks);
+        
+        $importedCount = 0;
+        $skippedCount = 0;
 
-        try {
-            $importedCount = 0;
-            $skippedCount = 0;
-
-            foreach ($projects as $index => $projectData) {
-                // Skip projects with empty titles
-                if (empty($projectData['projectTitle']) || trim($projectData['projectTitle']) === '') {
-                    $this->warn("Skipping project with empty title at index " . ($index + 1));
-                    $skippedCount++;
-                    continue;
-                }
-
-                $this->info("Processing project " . ($index + 1) . "/" . count($projects) . ": " . $projectData['projectTitle']);
-
-                // Check if project already exists
-                $existingProject = Project::where('title', $projectData['projectTitle'])
-                    ->where('year', $projectData['year'])
-                    ->first();
-
-                if ($existingProject) {
-                    $this->warn("Skipping duplicate project: " . $projectData['projectTitle']);
-                    $skippedCount++;
-                    continue;
-                }
-
-                if ($isDryRun) {
-                    $this->info("Would import: " . $projectData['projectTitle'] . " (" . $projectData['year'] . ")");
-                    $importedCount++;
-                    continue;
-                }
-
-                // Create project
-                $project = $this->createProject($projectData, $isDryRun);
-                
-                // Attach categories
-                $this->attachCategories($project, $projectData);
-
-                $importedCount++;
-
-                if ($importedCount % 50 == 0) {
-                    $this->info("Imported {$importedCount} projects so far...");
-                }
-            }
-
-            if (!$isDryRun) {
-                DB::commit();
-            }
+        foreach ($chunks as $chunkIndex => $chunk) {
+            $this->info("Processing chunk " . ($chunkIndex + 1) . "/{$totalChunks}...");
             
-            $this->info("Import completed successfully!");
-            $this->info("Imported: {$importedCount} projects");
-            $this->info("Skipped: {$skippedCount} duplicate projects");
-
-        } catch (\Exception $e) {
             if (!$isDryRun) {
-                DB::rollBack();
+                DB::beginTransaction();
             }
-            $this->error("Import failed: " . $e->getMessage());
-            return 1;
+
+            try {
+                foreach ($chunk as $index => $projectData) {
+                    $globalIndex = ($chunkIndex * $chunkSize) + $index + 1;
+                    
+                    // Skip projects with empty titles
+                    if (empty($projectData['projectTitle']) || trim($projectData['projectTitle']) === '') {
+                        $this->warn("Skipping project with empty title at index {$globalIndex}");
+                        $skippedCount++;
+                        continue;
+                    }
+
+                    $this->info("Processing project {$globalIndex}/{$totalProjects}: " . $projectData['projectTitle']);
+
+                    // Check if project already exists
+                    $existingProject = Project::where('title', $projectData['projectTitle'])
+                        ->where('year', $projectData['year'])
+                        ->first();
+
+                    if ($existingProject) {
+                        $this->warn("Skipping duplicate project: " . $projectData['projectTitle']);
+                        $skippedCount++;
+                        continue;
+                    }
+
+                    if ($isDryRun) {
+                        $this->info("Would import: " . $projectData['projectTitle'] . " (" . $projectData['year'] . ")");
+                        $importedCount++;
+                        continue;
+                    }
+
+                    // Create project
+                    $project = $this->createProject($projectData, $isDryRun);
+                    
+                    // Attach categories
+                    $this->attachCategories($project, $projectData);
+
+                    $importedCount++;
+
+                    // Force garbage collection periodically
+                    if ($importedCount % 5 == 0) {
+                        gc_collect_cycles();
+                    }
+                }
+
+                if (!$isDryRun) {
+                    DB::commit();
+                    $this->info("Chunk " . ($chunkIndex + 1) . " committed successfully");
+                }
+
+                // Show progress
+                $this->info("Progress: {$importedCount} imported, {$skippedCount} skipped");
+                
+                // Force garbage collection after each chunk
+                gc_collect_cycles();
+                
+            } catch (\Exception $e) {
+                if (!$isDryRun) {
+                    DB::rollBack();
+                }
+                $this->error("Chunk " . ($chunkIndex + 1) . " failed: " . $e->getMessage());
+                return 1;
+            }
         }
+
+        
+        $this->info("Import completed successfully!");
+        $this->info("Imported: {$importedCount} projects");
+        $this->info("Skipped: {$skippedCount} duplicate projects");
 
         return 0;
     }
@@ -350,6 +373,11 @@ class ImportProjectsFromJson extends Command
                 // Store the file
                 Storage::disk('public')->put($storagePath, $response->body());
                 $this->info("Thumbnail stored at: {$storagePath}");
+                
+                // Clear the response from memory
+                unset($response);
+                gc_collect_cycles();
+                
                 return $storagePath;
             } else {
                 $this->warn("Failed to download thumbnail: {$fullUrl} (HTTP {$response->status()})");
@@ -411,6 +439,11 @@ class ImportProjectsFromJson extends Command
                 // Store the file
                 Storage::disk('public')->put($storagePath, $response->body());
                 $this->info("PDF stored at: {$storagePath}");
+                
+                // Clear the response from memory
+                unset($response);
+                gc_collect_cycles();
+                
                 return $storagePath;
             } else {
                 $this->warn("Failed to download PDF: {$fullUrl} (HTTP {$response->status()})");
