@@ -4,7 +4,7 @@
     <div class="container">
         <h1 class="mb-4">Projects</h1>
         @can('admin')
-        <a href="{{ route('projects.create') }}" class="btn btn-primary mb-3">Add Project</a>
+            <a href="{{ route('projects.create') }}" class="btn btn-primary mb-3">Add Project</a>
         @endcan
 
         {{-- Success Message --}}
@@ -53,7 +53,11 @@
         </form>
 
         {{-- Projects Grid --}}
+                    <div class="my-5">
+                {{ $projects->links() }}
+            </div>
         <div id="projects-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+
             @foreach ($projects as $project)
                 <div class="col">
                     <div class="card h-100">
@@ -88,19 +92,21 @@
                             <p class="card-text"><strong>County:</strong> {{ $project->county }}</p>
                         </div>
 
-                        
+
                         <div class="card-footer">
                             {{-- Product Links --}}
                             <div class="mb-2">
                                 @if ($project->primary_product_url || $project->primary_product)
                                     @if ($project->primary_product_url)
-                                        <a href="{{ $project->primary_product_url }}" target="_blank" class="btn btn-primary btn-block mb-2 w-100">
+                                        <a href="{{ $project->primary_product_url }}" target="_blank"
+                                            class="btn btn-primary btn-block mb-2 w-100">
                                             <i class="bi bi-link-45deg"></i> View Project Website
                                         </a>
                                     @endif
 
                                     @if ($project->primary_product)
-                                        <a href="{{ asset('storage/' . $project->primary_product) }}" target="_blank" class="btn btn-primary btn-block mb-2 w-100">
+                                        <a href="{{ asset('storage/' . $project->primary_product) }}" target="_blank"
+                                            class="btn btn-primary btn-block mb-2 w-100">
                                             <i class="bi bi-file-earmark-arrow-down"></i> Download Poster
                                         </a>
                                     @endif
@@ -108,13 +114,15 @@
 
                                 @if ($project->secondary_product_url || $project->secondary_product)
                                     @if ($project->secondary_product_url)
-                                        <a href="{{ $project->secondary_product_url }}" target="_blank" class="btn btn-secondary btn-block mb-2 w-100">
+                                        <a href="{{ $project->secondary_product_url }}" target="_blank"
+                                            class="btn btn-secondary btn-block mb-2 w-100">
                                             <i class="bi bi-link-45deg"></i> View Secondary Website
                                         </a>
                                     @endif
 
                                     @if ($project->secondary_product)
-                                        <a href="{{ asset('storage/' . $project->secondary_product) }}" target="_blank" class="btn btn-secondary btn-block mb-2 w-100">
+                                        <a href="{{ asset('storage/' . $project->secondary_product) }}" target="_blank"
+                                            class="btn btn-secondary btn-block mb-2 w-100">
                                             <i class="bi bi-file-earmark-arrow-down"></i> Download #2
                                         </a>
                                     @endif
@@ -122,11 +130,13 @@
 
                                 @if ($project->third_download_url || $project->third_download)
                                     @if ($project->third_download_url)
-                                        <a href="{{ $project->third_download_url }}" target="_blank" class="btn btn-secondary btn-block mb-2 w-100">
+                                        <a href="{{ $project->third_download_url }}" target="_blank"
+                                            class="btn btn-secondary btn-block mb-2 w-100">
                                             <i class="bi bi-link-45deg"></i> View Third Website
                                         </a>
                                     @elseif ($project->third_download)
-                                        <a href="{{ asset('storage/' . $project->third_download) }}" target="_blank" class="btn btn-third btn-block mb-2 w-100">
+                                        <a href="{{ asset('storage/' . $project->third_download) }}" target="_blank"
+                                            class="btn btn-third btn-block mb-2 w-100">
                                             <i class="bi bi-file-earmark-arrow-down"></i> Download #3
                                         </a>
                                     @endif
@@ -134,15 +144,15 @@
                             </div>
                         </div>
                         @can('admin')
-                        <div class="card-footer d-flex justify-content-between">
-                            <a href="{{ route('projects.edit', $project) }}" class="btn btn-warning btn-sm">Edit</a>
-                            <form action="{{ route('projects.destroy', $project) }}" method="POST"
-                                onsubmit="return confirm('Are you sure you want to delete this project?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                            </form>
-                        </div>
+                            <div class="card-footer d-flex justify-content-between">
+                                <a href="{{ route('projects.edit', $project) }}" class="btn btn-warning btn-sm">Edit</a>
+                                <form action="{{ route('projects.destroy', $project) }}" method="POST"
+                                    onsubmit="return confirm('Are you sure you want to delete this project?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            </div>
                         @endcan
                     </div>
                 </div>
@@ -156,7 +166,7 @@
         </div>
 
         {{-- Pagination --}}
-        <div class="d-flex justify-content-center">
+        <div class="my-5">
             {{ $projects->links() }}
         </div>
     </div>
