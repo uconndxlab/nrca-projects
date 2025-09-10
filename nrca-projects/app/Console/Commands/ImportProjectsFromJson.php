@@ -1,0 +1,323 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Project;
+use App\Models\Category;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+
+class ImportProjectsFromJson extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'import:projects-json {--file=database/data/nrca-projects.json} {--dry-run : Show what would be imported without actually importing}';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Import projects from JSON file into the database';
+
+    /**
+     * Category mapping from JSON field names to category names
+     */
+    protected $categoryMap = [
+        'capStr' => 'CAP',
+        'ctpStr' => 'CTP', 
+        'edsStr' => 'EDS',
+        'biodiversityStr' => 'Biodiversity',
+        'communityScienceStr' => 'Community Science',
+        'climateChangeStr' => 'Climate Change',
+        'foodWasteStr' => 'Food Waste',
+        'forestryStr' => 'Forestry',
+        'greenInfrastructureStr' => 'Green Infrastructure',
+        'humanDimensionsStr' => 'Human Dimensions',
+        'invasiveSpeciesStr' => 'Invasive Species',
+        'landUseStr' => 'Land Use',
+        'mappingGisStr' => 'Mapping/GIS',
+        'OtherStr' => 'Other',
+        'publicOutreachStr' => 'Public Outreach',
+        'restorationStr' => 'Restoration',
+        'soilsAgricultureStr' => 'Soils/Agriculture',
+        'trailbuildingStr' => 'Trail Building',
+        'waterQualityStr' => 'Water Quality',
+    ];
+
+    /**
+     * Execute the console command.
+     */
+    public function handle()
+    {
+        $filePath = $this->option('file');
+        
+        if (!file_exists(base_path($filePath))) {
+            $this->error("File not found: {$filePath}");
+            return 1;
+        }
+
+        $this->info("Starting import from {$filePath}...");
+
+        // Read and decode JSON file
+        $jsonContent = file_get_contents(base_path($filePath));
+        $projects = json_decode($jsonContent, true);
+
+        if (!$projects) {
+            $this->error('Failed to parse JSON file');
+            return 1;
+        }
+
+        $this->info('Found ' . count($projects) . ' projects to import');
+
+        // Check for dry run
+        $isDryRun = $this->option('dry-run');
+        if ($isDryRun) {
+            $this->info('DRY RUN MODE - No data will be imported');
+        }
+
+        // Create categories if they don't exist
+        $this->createCategories($isDryRun);
+
+        // Start database transaction
+        if (!$isDryRun) {
+            DB::beginTransaction();
+        }
+
+        try {
+            $importedCount = 0;
+            $skippedCount = 0;
+
+            foreach ($projects as $index => $projectData) {
+                // Skip projects with empty titles
+                if (empty($projectData['projectTitle']) || trim($projectData['projectTitle']) === '') {
+                    $this->warn("Skipping project with empty title at index " . ($index + 1));
+                    $skippedCount++;
+                    continue;
+                }
+
+                $this->info("Processing project " . ($index + 1) . "/" . count($projects) . ": " . $projectData['projectTitle']);
+
+                // Check if project already exists
+                $existingProject = Project::where('title', $projectData['projectTitle'])
+                    ->where('year', $projectData['year'])
+                    ->first();
+
+                if ($existingProject) {
+                    $this->warn("Skipping duplicate project: " . $projectData['projectTitle']);
+                    $skippedCount++;
+                    continue;
+                }
+
+                if ($isDryRun) {
+                    $this->info("Would import: " . $projectData['projectTitle'] . " (" . $projectData['year'] . ")");
+                    $importedCount++;
+                    continue;
+                }
+
+                // Create project
+                $project = $this->createProject($projectData);
+                
+                // Attach categories
+                $this->attachCategories($project, $projectData);
+
+                $importedCount++;
+
+                if ($importedCount % 50 == 0) {
+                    $this->info("Imported {$importedCount} projects so far...");
+                }
+            }
+
+            if (!$isDryRun) {
+                DB::commit();
+            }
+            
+            $this->info("Import completed successfully!");
+            $this->info("Imported: {$importedCount} projects");
+            $this->info("Skipped: {$skippedCount} duplicate projects");
+
+        } catch (\Exception $e) {
+            if (!$isDryRun) {
+                DB::rollBack();
+            }
+            $this->error("Import failed: " . $e->getMessage());
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Create categories that don't exist
+     */
+    protected function createCategories($isDryRun = false)
+    {
+        $this->info('Creating categories...');
+
+        foreach ($this->categoryMap as $categoryName) {
+            if ($isDryRun) {
+                $existing = Category::where('name', $categoryName)->first();
+                if (!$existing) {
+                    $this->info("Would create category: {$categoryName}");
+                }
+            } else {
+                Category::firstOrCreate([
+                    'name' => $categoryName
+                ], [
+                    'description' => "Imported category: {$categoryName}"
+                ]);
+            }
+        }
+
+        $this->info('Categories created/verified');
+    }
+
+    /**
+     * Create a project from JSON data
+     */
+    protected function createProject(array $projectData): Project
+    {
+        // Map county from JSON format to proper format
+        $county = $this->formatCounty($projectData['countyStr']);
+        
+        // Determine program based on the category strings
+        $program = $this->determineProgram($projectData);
+
+        // Handle multiple URLs in projectUrl field
+        $urls = $this->parseProjectUrls($projectData['projectUrl'] ?? '');
+
+        $project = Project::create([
+            'title' => $projectData['projectTitle'],
+            'year' => $projectData['year'],
+            'county' => $county,
+            'program' => $program,
+            'thumbnail' => $this->mapThumbnail($projectData['thumbnailImageUrl'] ?? ''),
+            'primary_product' => $this->mapPdfFile($projectData['pdfFileUrl'] ?? ''),
+            'primary_product_url' => $urls['primary'] ?? null,
+            'secondary_product_url' => $urls['secondary'] ?? null,
+            'third_download_url' => $urls['third'] ?? null,
+        ]);
+
+        return $project;
+    }
+
+    /**
+     * Attach categories to project based on JSON data
+     */
+    protected function attachCategories(Project $project, array $projectData)
+    {
+        $categoryIds = [];
+
+        foreach ($this->categoryMap as $jsonField => $categoryName) {
+            // Check if this category field has a value
+            if (!empty($projectData[$jsonField])) {
+                $category = Category::where('name', $categoryName)->first();
+                if ($category) {
+                    $categoryIds[] = $category->id;
+                }
+            }
+        }
+
+        if (!empty($categoryIds)) {
+            $project->categories()->attach($categoryIds);
+        }
+    }
+
+    /**
+     * Format county name from JSON format to proper format
+     */
+    protected function formatCounty(string $countyStr): string
+    {
+        // Handle multiple counties separated by commas
+        $counties = explode(',', $countyStr);
+        $formattedCounties = [];
+
+        foreach ($counties as $county) {
+            $county = trim($county);
+            // Convert from lowercase to proper case
+            $formattedCounties[] = ucwords(str_replace(['_', '-'], ' ', $county));
+        }
+
+        return implode(', ', $formattedCounties);
+    }
+
+    /**
+     * Determine program based on category strings
+     */
+    protected function determineProgram(array $projectData): string
+    {
+        if (!empty($projectData['capStr'])) {
+            return 'CAP';
+        } elseif (!empty($projectData['ctpStr'])) {
+            return 'CTP';
+        } elseif (!empty($projectData['edsStr'])) {
+            return 'EDS';
+        }
+        
+        return 'Unknown';
+    }
+
+    /**
+     * Parse multiple URLs from projectUrl field
+     */
+    protected function parseProjectUrls(string $projectUrl): array
+    {
+        if (empty($projectUrl)) {
+            return [];
+        }
+
+        $urls = explode(',', $projectUrl);
+        $result = [];
+
+        foreach ($urls as $index => $url) {
+            $url = trim($url);
+            if (!empty($url) && filter_var($url, FILTER_VALIDATE_URL)) {
+                if ($index === 0) {
+                    $result['primary'] = $url;
+                } elseif ($index === 1) {
+                    $result['secondary'] = $url;
+                } elseif ($index === 2) {
+                    $result['third'] = $url;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Map thumbnail image URL to storage path
+     */
+    protected function mapThumbnail(string $thumbnailUrl): ?string
+    {
+        if (empty($thumbnailUrl)) {
+            return null;
+        }
+
+        // Extract filename from path like "images/project_thumbnails/cap_2012_1.jpg"
+        $filename = basename($thumbnailUrl);
+        
+        // Return the path that would be used in storage
+        return "thumbnails/{$filename}";
+    }
+
+    /**
+     * Map PDF file URL to storage path  
+     */
+    protected function mapPdfFile(string $pdfUrl): ?string
+    {
+        if (empty($pdfUrl)) {
+            return null;
+        }
+
+        // Extract filename from path like "posters/cap_2012_1.pdf"
+        $filename = basename($pdfUrl);
+        
+        // Return the path that would be used in storage
+        return "products/{$filename}";
+    }
+}
