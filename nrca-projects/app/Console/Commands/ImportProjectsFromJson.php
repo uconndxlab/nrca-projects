@@ -7,6 +7,8 @@ use App\Models\Category;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class ImportProjectsFromJson extends Command
 {
@@ -15,7 +17,7 @@ class ImportProjectsFromJson extends Command
      *
      * @var string
      */
-    protected $signature = 'import:projects-json {--file=database/data/nrca-projects.json} {--dry-run : Show what would be imported without actually importing}';
+    protected $signature = 'import:projects-json {--file=database/data/nrca-projects.json} {--dry-run : Show what would be imported without actually importing} {--skip-assets : Skip downloading assets}';
 
     /**
      * The console command description.
@@ -23,6 +25,11 @@ class ImportProjectsFromJson extends Command
      * @var string
      */
     protected $description = 'Import projects from JSON file into the database';
+
+    /**
+     * Base URL for downloading assets
+     */
+    protected $baseAssetUrl = 'https://nrca-projects.web.app/';
 
     /**
      * Category mapping from JSON field names to category names
@@ -120,7 +127,7 @@ class ImportProjectsFromJson extends Command
                 }
 
                 // Create project
-                $project = $this->createProject($projectData);
+                $project = $this->createProject($projectData, $isDryRun);
                 
                 // Attach categories
                 $this->attachCategories($project, $projectData);
@@ -179,7 +186,7 @@ class ImportProjectsFromJson extends Command
     /**
      * Create a project from JSON data
      */
-    protected function createProject(array $projectData): Project
+    protected function createProject(array $projectData, bool $isDryRun = false): Project
     {
         // Map county from JSON format to proper format
         $county = $this->formatCounty($projectData['countyStr']);
@@ -190,13 +197,17 @@ class ImportProjectsFromJson extends Command
         // Handle multiple URLs in projectUrl field
         $urls = $this->parseProjectUrls($projectData['projectUrl'] ?? '');
 
+        // Download and store assets
+        $thumbnailPath = $this->downloadAndStoreThumbnail($projectData['thumbnailImageUrl'] ?? '', $isDryRun);
+        $pdfPath = $this->downloadAndStorePdf($projectData['pdfFileUrl'] ?? '', $isDryRun);
+
         $project = Project::create([
             'title' => $projectData['projectTitle'],
             'year' => $projectData['year'],
             'county' => $county,
             'program' => $program,
-            'thumbnail' => $this->mapThumbnail($projectData['thumbnailImageUrl'] ?? ''),
-            'primary_product' => $this->mapPdfFile($projectData['pdfFileUrl'] ?? ''),
+            'thumbnail' => $thumbnailPath,
+            'primary_product' => $pdfPath,
             'primary_product_url' => $urls['primary'] ?? null,
             'secondary_product_url' => $urls['secondary'] ?? null,
             'third_download_url' => $urls['third'] ?? null,
@@ -290,7 +301,129 @@ class ImportProjectsFromJson extends Command
     }
 
     /**
-     * Map thumbnail image URL to storage path
+     * Download and store thumbnail image
+     */
+    protected function downloadAndStoreThumbnail(string $thumbnailUrl, bool $isDryRun = false): ?string
+    {
+        if (empty($thumbnailUrl)) {
+            return null;
+        }
+
+        // Skip if user wants to skip assets
+        if ($this->option('skip-assets')) {
+            $this->info("Skipping asset download: {$thumbnailUrl}");
+            return null;
+        }
+
+        // Check if URL has protocol, if not, prepend base URL
+        if (!parse_url($thumbnailUrl, PHP_URL_SCHEME)) {
+            $fullUrl = $this->baseAssetUrl . ltrim($thumbnailUrl, '/');
+        } else {
+            $fullUrl = $thumbnailUrl;
+        }
+
+        if ($isDryRun) {
+            $this->info("Would download thumbnail: {$fullUrl}");
+            return "thumbnails/" . basename($thumbnailUrl);
+        }
+
+        try {
+            // Generate filename
+            $filename = basename($thumbnailUrl);
+            $extension = pathinfo($filename, PATHINFO_EXTENSION);
+            
+            // Ensure we have an extension
+            if (empty($extension)) {
+                $extension = 'jpg'; // default extension
+                $filename .= '.jpg';
+            }
+
+            // Create unique filename to avoid conflicts
+            $storagePath = 'thumbnails/' . Str::random(8) . '_' . $filename;
+
+            $this->info("Downloading thumbnail from: {$fullUrl}");
+            
+            // Download the file with timeout
+            $response = Http::timeout(30)->get($fullUrl);
+            
+            if ($response->successful()) {
+                // Store the file
+                Storage::disk('public')->put($storagePath, $response->body());
+                $this->info("Thumbnail stored at: {$storagePath}");
+                return $storagePath;
+            } else {
+                $this->warn("Failed to download thumbnail: {$fullUrl} (HTTP {$response->status()})");
+                return null;
+            }
+        } catch (\Exception $e) {
+            $this->warn("Error downloading thumbnail {$fullUrl}: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Download and store PDF file
+     */
+    protected function downloadAndStorePdf(string $pdfUrl, bool $isDryRun = false): ?string
+    {
+        if (empty($pdfUrl)) {
+            return null;
+        }
+
+        // Skip if user wants to skip assets
+        if ($this->option('skip-assets')) {
+            $this->info("Skipping asset download: {$pdfUrl}");
+            return null;
+        }
+
+        // Check if URL has protocol, if not, prepend base URL
+        if (!parse_url($pdfUrl, PHP_URL_SCHEME)) {
+            $fullUrl = $this->baseAssetUrl . ltrim($pdfUrl, '/');
+        } else {
+            $fullUrl = $pdfUrl;
+        }
+
+        if ($isDryRun) {
+            $this->info("Would download PDF: {$fullUrl}");
+            return "products/" . basename($pdfUrl);
+        }
+
+        try {
+            // Generate filename
+            $filename = basename($pdfUrl);
+            $extension = pathinfo($filename, PATHINFO_EXTENSION);
+            
+            // Ensure we have an extension
+            if (empty($extension)) {
+                $extension = 'pdf'; // default extension
+                $filename .= '.pdf';
+            }
+
+            // Create unique filename to avoid conflicts
+            $storagePath = 'products/' . Str::random(8) . '_' . $filename;
+
+            $this->info("Downloading PDF from: {$fullUrl}");
+            
+            // Download the file with timeout
+            $response = Http::timeout(60)->get($fullUrl); // Longer timeout for PDFs
+            
+            if ($response->successful()) {
+                // Store the file
+                Storage::disk('public')->put($storagePath, $response->body());
+                $this->info("PDF stored at: {$storagePath}");
+                return $storagePath;
+            } else {
+                $this->warn("Failed to download PDF: {$fullUrl} (HTTP {$response->status()})");
+                return null;
+            }
+        } catch (\Exception $e) {
+            $this->warn("Error downloading PDF {$fullUrl}: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Map thumbnail image URL to storage path (legacy method)
      */
     protected function mapThumbnail(string $thumbnailUrl): ?string
     {
@@ -306,7 +439,7 @@ class ImportProjectsFromJson extends Command
     }
 
     /**
-     * Map PDF file URL to storage path  
+     * Map PDF file URL to storage path (legacy method)
      */
     protected function mapPdfFile(string $pdfUrl): ?string
     {
