@@ -5,7 +5,10 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Pagination\Paginator;
+use SocialiteProviders\Manager\SocialiteWasCalled;
+use SocialiteProviders\OpenIdConnect\Providers\EntraProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -45,6 +48,10 @@ class AppServiceProvider extends ServiceProvider
         // Define an admin gate
         Gate::define('admin', function ($user) {
             return $user && $user->is_admin;
+        });
+
+        Event::listen(SocialiteWasCalled::class, function (SocialiteWasCalled $event) {
+            $event->extendSocialite('oidc_entra', EntraProvider::class);
         });
     }
 }

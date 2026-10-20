@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'cas.auth' => \App\Http\Middleware\CasAuth::class,
+            'entra' => \App\Http\Middleware\EntraAuthenticate::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
