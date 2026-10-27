@@ -28,22 +28,27 @@ class AppServiceProvider extends ServiceProvider
         // Use Bootstrap 5 pagination views
         Paginator::useBootstrapFive();
 
-        // Define counties array
-        $counties = [
-            'Hartford County',
-            'New Haven County',
-            'Fairfield County',
-            'Litchfield County',
-            'Middlesex County',
-            'Tolland County',
-            'Windham County',
-            'New London County'
-        ];
-
-        sort($counties);
-
-        // Share counties with all views
-        View::share('counties', $counties);
+        // Share counties with all views dynamically
+        View::composer('*', function ($view) {
+            if (!$view->offsetExists('counties')) {
+                static $cachedCounties = null;
+                if ($cachedCounties === null) {
+                    try {
+                        if (\Illuminate\Support\Facades\Schema::hasTable('counties')) {
+                            $cachedCounties = \App\Models\County::orderBy('name')->pluck('name')->toArray();
+                        }
+                    } catch (\Throwable $e) {
+                    }
+                    if (empty($cachedCounties)) {
+                        $cachedCounties = [
+                            'Fairfield', 'Hartford', 'Litchfield', 'Middlesex',
+                            'New Haven', 'New London', 'Tolland', 'Windham', 'Statewide',
+                        ];
+                    }
+                }
+                $view->with('counties', $cachedCounties);
+            }
+        });
 
         // Define an admin gate
         Gate::define('admin', function ($user) {
