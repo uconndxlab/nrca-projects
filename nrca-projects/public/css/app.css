@@ -26,22 +26,40 @@ body {
     flex-direction: column;
 }
 
-header {
-    background-color: var(--nrca-navy);
-    color: #ffffff;
-    padding: 0.75rem 0;
-    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+/* Embedded / Standalone Visibility Rules */
+.is-embedded .standalone-only {
+    display: none !important;
 }
 
-header a {
+header, header.site-header {
+    background-color: var(--nrca-navy);
+    color: #ffffff;
+    padding: 0.85rem 0;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+header a, header.site-header a {
     color: #ffffff;
     text-decoration: none;
     font-weight: 500;
 }
 
-header a:hover {
+header a:hover, header.site-header a:hover {
     color: #ffd8a8;
     text-decoration: none;
+}
+
+header .site-title,
+header.site-header .site-title,
+header h1,
+header.site-header h1 {
+    color: #ffffff !important;
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0;
+    letter-spacing: -0.01em;
 }
 
 main {

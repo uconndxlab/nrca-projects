@@ -8,7 +8,7 @@
             <p class="text-muted small mb-0">Showing {{ $projects->firstItem() ?? 0 }}–{{ $projects->lastItem() ?? 0 }} of {{ $projects->total() }} projects</p>
         </div>
         @can('admin')
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 standalone-only">
                 <a href="{{ route('projects.create') }}" class="btn btn-sm btn-nrca-orange" hx-boost="false">
                     Add Project
                 </a>
@@ -186,7 +186,7 @@
                             </div>
 
                             @can('admin')
-                                <div class="d-flex justify-content-between pt-2 mt-2 border-top small">
+                                <div class="d-flex justify-content-between pt-2 mt-2 border-top small standalone-only">
                                     <a href="{{ route('projects.edit', $project) }}" class="text-decoration-none text-muted" hx-boost="false"><i class="bi bi-pencil me-1"></i>Edit</a>
                                     <form action="{{ route('projects.destroy', $project) }}" method="POST"
                                         onsubmit="return confirm('Are you sure you want to delete this project?');" class="d-inline">
