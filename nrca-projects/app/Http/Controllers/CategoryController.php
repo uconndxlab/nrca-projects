@@ -28,7 +28,7 @@ class CategoryController extends Controller
 
         Category::create($request->all());
 
-        return redirect()->route('categories.index')->with('success', 'Category created.');
+        return redirect()->route('admin', ['tab' => 'categories'])->with('success', 'Tag created successfully.');
     }
 
     public function edit(Category $category)
@@ -45,13 +45,13 @@ class CategoryController extends Controller
 
         $category->update($request->all());
 
-        return redirect()->route('categories.index')->with('success', 'Category updated.');
+        return redirect()->route('admin', ['tab' => 'categories'])->with('success', 'Tag updated successfully.');
     }
 
     public function destroy(Category $category)
     {
         $category->delete();
 
-        return redirect()->route('categories.index')->with('success', 'Category deleted.');
+        return redirect()->route('admin', ['tab' => 'categories'])->with('success', 'Tag deleted successfully.');
     }
 }
