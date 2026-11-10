@@ -96,12 +96,12 @@
                 <div class="col">
                     <div class="card project-card h-100">
                         {{-- Thumbnail --}}
-                        <div class="position-relative">
+                        <div class="position-relative bg-light d-flex align-items-center justify-content-center" style="height: 180px; overflow: hidden;">
                             @if ($project->thumbnail)
                                 <img src="{{ asset('storage/' . $project->thumbnail) }}" class="card-img-top"
-                                    alt="{{ $project->title }}" style="height: 180px; object-fit: cover;">
+                                    alt="{{ $project->title }}" style="max-height: 100%; max-width: 100%; width: auto; height: auto; object-fit: contain; object-position: center; margin: auto;">
                             @else
-                                <div class="card-img-top d-flex align-items-center justify-content-center bg-light text-muted" style="height: 180px;">
+                                <div class="card-img-top d-flex align-items-center justify-content-center h-100 text-muted">
                                     <small class="text-secondary"><i class="bi bi-image me-1"></i> No Preview Available</small>
                                 </div>
                             @endif
