@@ -70,48 +70,57 @@ class ProjectController extends Controller
 
     public function create()
     {
-        $categories = Category::all();
+        $categories = Category::orderBy('name')->get();
         $programs = Program::orderBy('name')->get();
-        return view('projects.create', compact('categories', 'programs'));
+        $years = CohortYear::orderBy('year', 'desc')->pluck('year');
+        return view('projects.create', compact('categories', 'programs', 'years'));
     }
 
     public function store(Request $request)
     {
+        // Normalize single county input to counties array if provided
+        if (!$request->has('counties') && $request->filled('county')) {
+            $request->merge(['counties' => [$request->input('county')]]);
+        }
+
         $request->validate([
             'title' => 'required|string|max:255',
-            'program' => 'required|string|max:255',
-            'year' => 'required|integer|min:1900|max:' . date('Y'),
-            'counties' => 'nullable|array',
-            'counties.*' => 'string|max:255',
-            'county' => 'nullable|string|max:255',
-            'thumbnail_image' => 'nullable|image|max:2048',
-            'primary_product' => 'nullable|file|max:10000|required_without:primary_product_url',
+            'program' => 'required|string|exists:programs,name',
+            'year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
+            'counties' => 'required|array|min:1',
+            'counties.*' => 'string|exists:counties,name',
+            'categories' => 'nullable|array',
+            'categories.*' => 'integer|exists:categories,id',
+            'thumbnail_image' => 'nullable|image|max:10240',
+            'primary_product' => 'nullable|file|max:25600|required_without:primary_product_url',
             'primary_product_url' => 'nullable|url|max:2048|required_without:primary_product',
-            'secondary_product' => 'nullable|file|max:10000',
+            'secondary_product' => 'nullable|file|max:25600',
             'secondary_product_url' => 'nullable|url|max:2048',
-            'third_download' => 'nullable|file|max:10000',
+            'third_download' => 'nullable|file|max:25600',
             'third_download_url' => 'nullable|url|max:2048',
-            'fourth_download' => 'nullable|file|max:10000',
+            'fourth_download' => 'nullable|file|max:25600',
             'fourth_download_url' => 'nullable|url|max:2048',
-            'fifth_download' => 'nullable|file|max:10000',
+            'fifth_download' => 'nullable|file|max:25600',
             'fifth_download_url' => 'nullable|url|max:2048',
         ], [
-            'primary_product.required_without' => 'Please provide at least one media product (upload a file or website link).',
-            'primary_product_url.required_without' => 'Please provide at least one media product (upload a file or website link).',
+            'program.exists' => 'The selected NRCA program is invalid.',
+            'year.min' => 'Cohort year must be 2000 or later.',
+            'year.max' => 'Cohort year must be allowed by an administrator.',
+            'counties.required' => 'Please select at least one county.',
+            'counties.min' => 'Please select at least one county.',
+            'counties.*.exists' => 'One or more selected counties are invalid.',
+            'categories.*.exists' => 'One or more selected tags are invalid.',
+            'primary_product.required_without' => 'Please provide at least one media product.',
+            'primary_product_url.required_without' => 'Please provide at least one media product.',
+            'thumbnail_image.max' => 'The thumbnail image may not be greater than 10MB.',
+            'primary_product.max' => 'The primary media file may not be greater than 25MB.',
+            'secondary_product.max' => 'The secondary media file may not be greater than 25MB.',
+            'third_download.max' => 'Deliverable file may not be greater than 25MB.',
+            'fourth_download.max' => 'Deliverable file may not be greater than 25MB.',
+            'fifth_download.max' => 'Deliverable file may not be greater than 25MB.',
         ]);
 
-        $countiesInput = $request->input('counties', []);
-        if (is_array($countiesInput) && count($countiesInput) > 0) {
-            $county = implode(', ', array_filter($countiesInput));
-        } else {
-            $county = $request->input('county');
-        }
-
-        if (empty($county)) {
-            return back()->withInput()->withErrors([
-                'counties' => 'Please select at least one county.',
-            ]);
-        }
+        $county = implode(', ', array_filter($request->input('counties', [])));
 
         $project = new Project($request->except([
             'thumbnail_image',
@@ -182,45 +191,55 @@ class ProjectController extends Controller
 
     public function edit(Project $project)
     {
-        $categories = Category::all();
+        $categories = Category::orderBy('name')->get();
         $programs = Program::orderBy('name')->get();
-        return view('projects.edit', compact('project', 'categories', 'programs'));
+        $years = CohortYear::orderBy('year', 'desc')->pluck('year');
+        return view('projects.edit', compact('project', 'categories', 'programs', 'years'));
     }
 
     public function update(Request $request, Project $project)
     {
+        // Normalize single county input to counties array if provided
+        if (!$request->has('counties') && $request->filled('county')) {
+            $request->merge(['counties' => [$request->input('county')]]);
+        }
+
         $request->validate([
             'title' => 'required|string|max:255',
-            'program' => 'required|string|max:255',
-            'year' => 'required|integer|min:1900|max:' . date('Y'),
-            'counties' => 'nullable|array',
-            'counties.*' => 'string|max:255',
-            'county' => 'nullable|string|max:255',
-            'thumbnail_image' => 'nullable|image|max:2048',
-            'primary_product' => 'nullable|file|max:10000',
+            'program' => 'required|string|exists:programs,name',
+            'year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
+            'counties' => 'required|array|min:1',
+            'counties.*' => 'string|exists:counties,name',
+            'categories' => 'nullable|array',
+            'categories.*' => 'integer|exists:categories,id',
+            'thumbnail_image' => 'nullable|image|max:10240',
+            'primary_product' => 'nullable|file|max:25600',
             'primary_product_url' => 'nullable|url|max:2048',
-            'secondary_product' => 'nullable|file|max:10000',
+            'secondary_product' => 'nullable|file|max:25600',
             'secondary_product_url' => 'nullable|url|max:2048',
-            'third_download' => 'nullable|file|max:10000',
+            'third_download' => 'nullable|file|max:25600',
             'third_download_url' => 'nullable|url|max:2048',
-            'fourth_download' => 'nullable|file|max:10000',
+            'fourth_download' => 'nullable|file|max:25600',
             'fourth_download_url' => 'nullable|url|max:2048',
-            'fifth_download' => 'nullable|file|max:10000',
+            'fifth_download' => 'nullable|file|max:25600',
             'fifth_download_url' => 'nullable|url|max:2048',
+        ], [
+            'program.exists' => 'The selected NRCA program is invalid. Please select a defined program.',
+            'year.min' => 'Cohort year must be 2000 or later.',
+            'year.max' => 'Cohort year cannot be more than one year in the future.',
+            'counties.required' => 'Please select at least one county.',
+            'counties.min' => 'Please select at least one county.',
+            'counties.*.exists' => 'One or more selected counties are invalid.',
+            'categories.*.exists' => 'One or more selected tags are invalid.',
+            'thumbnail_image.max' => 'The thumbnail image may not be greater than 10MB.',
+            'primary_product.max' => 'The primary media file may not be greater than 25MB.',
+            'secondary_product.max' => 'The secondary media file may not be greater than 25MB.',
+            'third_download.max' => 'Deliverable #3 file may not be greater than 25MB.',
+            'fourth_download.max' => 'Deliverable #4 file may not be greater than 25MB.',
+            'fifth_download.max' => 'Deliverable #5 file may not be greater than 25MB.',
         ]);
 
-        $countiesInput = $request->input('counties', []);
-        if (is_array($countiesInput) && count($countiesInput) > 0) {
-            $county = implode(', ', array_filter($countiesInput));
-        } else {
-            $county = $request->input('county');
-        }
-
-        if (empty($county)) {
-            return back()->withInput()->withErrors([
-                'counties' => 'Please select at least one county.',
-            ]);
-        }
+        $county = implode(', ', array_filter($request->input('counties', [])));
 
         if (!$request->hasFile('primary_product') && !$project->primary_product && !$request->filled('primary_product_url')) {
             return back()->withInput()->withErrors([

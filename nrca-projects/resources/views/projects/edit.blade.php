@@ -19,6 +19,21 @@
             </a>
         </div>
 
+        @if ($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                <div class="d-flex align-items-center mb-1">
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                    <strong>Please correct the following errors:</strong>
+                </div>
+                <ul class="mb-0 ps-3">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
         <form action="{{ route('projects.update', $project) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
@@ -33,29 +48,34 @@
                 <div class="card-body p-4">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Project Title <span class="text-danger">*</span></label>
-                        <input type="text" name="title" class="form-control" value="{{ old('title', $project->title) }}" placeholder="e.g. Assessing River Health Using Macroinvertebrates" required>
+                        <input type="text" name="title" class="form-control @error('title') is-invalid @enderror" value="{{ old('title', $project->title) }}" placeholder="e.g. Assessing River Health Using Macroinvertebrates" required>
+                        @error('title')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">NRCA Program <span class="text-danger">*</span></label>
-                            <input type="text" name="program" class="form-control" list="programList" value="{{ old('program', $project->program) }}" placeholder="e.g. CAP" required>
-                            <datalist id="programList">
-                                @if(isset($programs) && count($programs) > 0)
-                                    @foreach($programs as $p)
-                                        <option value="{{ $p->name }}">{{ $p->full_name ?: $p->name }}</option>
-                                    @endforeach
-                                @else
-                                    <option value="CAP">Conservation Ambassador Program (CAP)</option>
-                                    <option value="CTP">Conservation Training Partnerships (CTP)</option>
-                                    <option value="EDS">Environmental Data Science (EDS)</option>
-                                @endif
-                            </datalist>
+                            <select name="program" class="form-select @error('program') is-invalid @enderror" required>
+                                <option value="">Select a Program</option>
+                                @foreach($programs as $p)
+                                    <option value="{{ $p->name }}" {{ old('program', $project->program) === $p->name ? 'selected' : '' }}>
+                                        {{ $p->name }} — {{ $p->full_name ?: $p->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('program')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Cohort Year <span class="text-danger">*</span></label>
-                            <input type="number" name="year" class="form-control" min="2000" max="{{ date('Y') }}" value="{{ old('year', $project->year) }}" required>
+                            <input type="number" name="year" class="form-control @error('year') is-invalid @enderror" min="2000" max="{{ date('Y') + 1 }}" value="{{ old('year', $project->year) }}" placeholder="e.g. {{ date('Y') }}" required>
+                            @error('year')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
 
@@ -122,8 +142,11 @@
                                 </div>
                             </div>
                         @endif
-                        <input type="file" name="thumbnail_image" class="form-control" accept="image/*">
-                        <div class="form-text">Recommended size: 800x450 (16:9 ratio). Max 2MB.</div>
+                        <input type="file" name="thumbnail_image" class="form-control @error('thumbnail_image') is-invalid @enderror" accept="image/*">
+                        <div class="form-text">Recommended size: 800x450 (16:9 ratio). Max 10MB.</div>
+                        @error('thumbnail_image')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     {{-- Dynamic Media Products --}}
@@ -141,31 +164,31 @@
                                     </a>
                                 </div>
                             @endif
-                            <p class="text-muted small mb-2">Provide an uploaded file or website link.</p>
+                            <p class="text-muted small mb-2">Provide an uploaded file (max 25MB) or website link.</p>
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">{{ $project->primary_product ? 'Replace File' : 'Upload File' }}</label>
-                                    <input type="file" name="primary_product" id="primary_product_file" class="form-control form-control-sm">
+                                    <input type="file" name="primary_product" id="primary_product_file" class="form-control form-control-sm @error('primary_product') is-invalid @enderror">
+                                    @error('primary_product')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">Website Link</label>
-                                    <input type="url" name="primary_product_url" id="primary_product_url" class="form-control form-control-sm" value="{{ old('primary_product_url', $project->primary_product_url) }}" placeholder="https://...">
+                                    <input type="url" name="primary_product_url" id="primary_product_url" class="form-control form-control-sm @error('primary_product_url') is-invalid @enderror" value="{{ old('primary_product_url', $project->primary_product_url) }}" placeholder="https://...">
+                                    @error('primary_product_url')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                             <div id="primary-product-error" class="text-danger small mt-2 d-none">
                                 <i class="bi bi-exclamation-circle me-1"></i>Please provide at least one media product (upload a file or website link).
                             </div>
-                            @error('primary_product')
-                                <div class="text-danger small mt-2">{{ $message }}</div>
-                            @enderror
-                            @error('primary_product_url')
-                                <div class="text-danger small mt-2">{{ $message }}</div>
-                            @enderror
                         </div>
 
                         {{-- Product #2 (Secondary - Optional) --}}
                         @php
-                            $hasMedia2 = old('secondary_product_url') || old('secondary_product') || $project->secondary_product || $project->secondary_product_url;
+                            $hasMedia2 = old('secondary_product_url') || old('secondary_product') || $project->secondary_product || $project->secondary_product_url || $errors->has('secondary_product') || $errors->has('secondary_product_url');
                         @endphp
                         <div class="media-product-item border rounded-3 p-3 mb-3 bg-light {{ $hasMedia2 ? '' : 'd-none' }}" id="media-product-2">
                             <input type="hidden" name="remove_secondary_product" id="remove_secondary_product" value="0">
@@ -185,18 +208,25 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">{{ $project->secondary_product ? 'Replace File' : 'Upload File' }}</label>
-                                    <input type="file" name="secondary_product" class="form-control form-control-sm">
+                                    <input type="file" name="secondary_product" class="form-control form-control-sm @error('secondary_product') is-invalid @enderror">
+                                    <div class="form-text small">Max 25MB.</div>
+                                    @error('secondary_product')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">OR Website Link</label>
-                                    <input type="url" name="secondary_product_url" class="form-control form-control-sm" value="{{ old('secondary_product_url', $project->secondary_product_url) }}" placeholder="https://...">
+                                    <input type="url" name="secondary_product_url" class="form-control form-control-sm @error('secondary_product_url') is-invalid @enderror" value="{{ old('secondary_product_url', $project->secondary_product_url) }}" placeholder="https://...">
+                                    @error('secondary_product_url')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
 
                         {{-- Product #3 (Additional - Optional) --}}
                         @php
-                            $hasMedia3 = old('third_download_url') || old('third_download') || $project->third_download || $project->third_download_url;
+                            $hasMedia3 = old('third_download_url') || old('third_download') || $project->third_download || $project->third_download_url || $errors->has('third_download') || $errors->has('third_download_url');
                         @endphp
                         <div class="media-product-item border rounded-3 p-3 mb-3 bg-light {{ $hasMedia3 ? '' : 'd-none' }}" id="media-product-3">
                             <input type="hidden" name="remove_third_download" id="remove_third_download" value="0">
@@ -216,18 +246,25 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">{{ $project->third_download ? 'Replace File' : 'Upload File' }}</label>
-                                    <input type="file" name="third_download" class="form-control form-control-sm">
+                                    <input type="file" name="third_download" class="form-control form-control-sm @error('third_download') is-invalid @enderror">
+                                    <div class="form-text small">Max 25MB.</div>
+                                    @error('third_download')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">OR Website Link</label>
-                                    <input type="url" name="third_download_url" class="form-control form-control-sm" value="{{ old('third_download_url', $project->third_download_url) }}" placeholder="https://...">
+                                    <input type="url" name="third_download_url" class="form-control form-control-sm @error('third_download_url') is-invalid @enderror" value="{{ old('third_download_url', $project->third_download_url) }}" placeholder="https://...">
+                                    @error('third_download_url')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
 
                         {{-- Product #4 (Additional - Optional) --}}
                         @php
-                            $hasMedia4 = old('fourth_download_url') || old('fourth_download') || $project->fourth_download || $project->fourth_download_url;
+                            $hasMedia4 = old('fourth_download_url') || old('fourth_download') || $project->fourth_download || $project->fourth_download_url || $errors->has('fourth_download') || $errors->has('fourth_download_url');
                         @endphp
                         <div class="media-product-item border rounded-3 p-3 mb-3 bg-light {{ $hasMedia4 ? '' : 'd-none' }}" id="media-product-4">
                             <input type="hidden" name="remove_fourth_download" id="remove_fourth_download" value="0">
@@ -247,18 +284,25 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">{{ $project->fourth_download ? 'Replace File' : 'Upload File' }}</label>
-                                    <input type="file" name="fourth_download" class="form-control form-control-sm">
+                                    <input type="file" name="fourth_download" class="form-control form-control-sm @error('fourth_download') is-invalid @enderror">
+                                    <div class="form-text small">Max 25MB.</div>
+                                    @error('fourth_download')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">OR Website Link</label>
-                                    <input type="url" name="fourth_download_url" class="form-control form-control-sm" value="{{ old('fourth_download_url', $project->fourth_download_url) }}" placeholder="https://...">
+                                    <input type="url" name="fourth_download_url" class="form-control form-control-sm @error('fourth_download_url') is-invalid @enderror" value="{{ old('fourth_download_url', $project->fourth_download_url) }}" placeholder="https://...">
+                                    @error('fourth_download_url')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
 
                         {{-- Product #5 (Additional - Optional) --}}
                         @php
-                            $hasMedia5 = old('fifth_download_url') || old('fifth_download') || $project->fifth_download || $project->fifth_download_url;
+                            $hasMedia5 = old('fifth_download_url') || old('fifth_download') || $project->fifth_download || $project->fifth_download_url || $errors->has('fifth_download') || $errors->has('fifth_download_url');
                         @endphp
                         <div class="media-product-item border rounded-3 p-3 mb-3 bg-light {{ $hasMedia5 ? '' : 'd-none' }}" id="media-product-5">
                             <input type="hidden" name="remove_fifth_download" id="remove_fifth_download" value="0">
@@ -278,11 +322,18 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">{{ $project->fifth_download ? 'Replace File' : 'Upload File' }}</label>
-                                    <input type="file" name="fifth_download" class="form-control form-control-sm">
+                                    <input type="file" name="fifth_download" class="form-control form-control-sm @error('fifth_download') is-invalid @enderror">
+                                    <div class="form-text small">Max 25MB.</div>
+                                    @error('fifth_download')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">OR Website Link</label>
-                                    <input type="url" name="fifth_download_url" class="form-control form-control-sm" value="{{ old('fifth_download_url', $project->fifth_download_url) }}" placeholder="https://...">
+                                    <input type="url" name="fifth_download_url" class="form-control form-control-sm @error('fifth_download_url') is-invalid @enderror" value="{{ old('fifth_download_url', $project->fifth_download_url) }}" placeholder="https://...">
+                                    @error('fifth_download_url')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
@@ -396,6 +447,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
     updateAddButton();
 
+    // File size validation helper
+    function setupFileSizeValidation(inputSelector, maxMb, errorText) {
+        const input = document.querySelector(inputSelector);
+        if (!input) return;
+        input.addEventListener('change', function () {
+            const file = this.files && this.files[0];
+            const maxBytes = maxMb * 1024 * 1024;
+            let feedback = this.parentNode.querySelector('.client-file-error');
+            if (file && file.size > maxBytes) {
+                this.classList.add('is-invalid');
+                if (!feedback) {
+                    feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback client-file-error';
+                    this.parentNode.appendChild(feedback);
+                }
+                feedback.textContent = errorText;
+                feedback.style.display = 'block';
+            } else {
+                if (feedback) {
+                    feedback.remove();
+                }
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+
+    setupFileSizeValidation('input[name="thumbnail_image"]', 10, 'Thumbnail must be under 10MB.');
+    setupFileSizeValidation('input[name="primary_product"]', 25, 'Primary file must be under 25MB.');
+    setupFileSizeValidation('input[name="secondary_product"]', 25, 'Secondary file must be under 25MB.');
+    setupFileSizeValidation('input[name="third_download"]', 25, 'Deliverable #3 file must be under 25MB.');
+    setupFileSizeValidation('input[name="fourth_download"]', 25, 'Deliverable #4 file must be under 25MB.');
+    setupFileSizeValidation('input[name="fifth_download"]', 25, 'Deliverable #5 file must be under 25MB.');
+
     // Client-side validation
     const form = document.querySelector('form[action="{{ route('projects.update', $project) }}"]');
     const fileInput = document.getElementById('primary_product_file');
@@ -406,6 +490,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (form) {
         form.addEventListener('submit', function (e) {
+            // Check for client-side file size errors
+            const oversizeInputs = form.querySelectorAll('.client-file-error');
+            if (oversizeInputs.length > 0) {
+                e.preventDefault();
+                alert('Please remove or replace files exceeding the maximum size limit before saving.');
+                return;
+            }
             const countyChecked = document.querySelectorAll('.county-checkbox:checked').length > 0;
             if (!countyChecked) {
                 e.preventDefault();
