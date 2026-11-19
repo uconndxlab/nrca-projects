@@ -23,8 +23,8 @@
     <div id="projects-container" hx-boost="true" hx-target="#projects-container" hx-select="#projects-container" hx-swap="outerHTML" hx-push-url="true">
         {{-- Filter Bars with Right-Aligned Minimal Pagination on the Same Row --}}
         <div class="filter-toolbar mb-4">
-            <form hx-boost="true" hx-trigger="change, keyup delay:500ms from:#search-input" hx-target="#projects-container"
-                hx-select="#projects-container" hx-swap="outerHTML" hx-push-url="true" method="GET"
+            <form hx-boost="true" hx-trigger="change, keyup delay:300ms from:#search-input" hx-target="#projects-container"
+                hx-select="#projects-container" hx-swap="outerHTML" hx-sync="this:replace" hx-push-url="true" method="GET"
                 action="{{ route('projects.index') }}" class="m-0">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                     {{-- Filter Dropdowns --}}
@@ -106,9 +106,14 @@
                                 </div>
                             @endif
 
-                            @if ($project->categories->isNotEmpty())
+                            @php
+                                $topicCategories = $project->categories->reject(function ($cat) use ($programs) {
+                                    return in_array($cat->name, is_array($programs) ? $programs : $programs->toArray());
+                                });
+                            @endphp
+                            @if ($topicCategories->isNotEmpty())
                                 <div class="position-absolute top-0 start-0 m-2 d-flex flex-wrap gap-1">
-                                    @foreach ($project->categories->take(3) as $category)
+                                    @foreach ($topicCategories->take(3) as $category)
                                         <span class="badge-tag">{{ $category->name }}</span>
                                     @endforeach
                                 </div>

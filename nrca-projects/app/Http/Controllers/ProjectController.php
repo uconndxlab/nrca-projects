@@ -17,23 +17,31 @@ class ProjectController extends Controller
         $query = Project::query();
 
         if ($request->filled('category')) {
-            $query->whereHas('categories', function ($q) use ($request) {
-            $q->where('id', $request->category);
+            $categoryId = $request->category;
+            $query->whereHas('categories', function ($q) use ($categoryId) {
+                $q->where('categories.id', $categoryId);
             });
         }
 
         if ($request->filled('year')) {
-            $query->where('year', $request->year)->orderBy('year', 'asc');
+            $query->where('year', $request->year);
         }
 
         if ($request->filled('county')) {
-            $selectedCounty = $request->county;
+            $selectedCounty = trim($request->county);
             $query->where(function ($q) use ($selectedCounty) {
                 $q->where('county', 'like', '%' . $selectedCounty . '%');
+                // Legacy misspellings fallback (in case any unmigrated records exist)
                 if ($selectedCounty === 'New Haven') {
                     $q->orWhere('county', 'like', '%Newhaven%');
                 } elseif ($selectedCounty === 'New London') {
                     $q->orWhere('county', 'like', '%Newlondon%');
+                } elseif ($selectedCounty === 'Hartford') {
+                    $q->orWhere('county', 'like', '%Harford%');
+                }
+                // Any specific Connecticut county also matches projects marked "Statewide"
+                if ($selectedCounty !== 'Statewide') {
+                    $q->orWhere('county', 'like', '%Statewide%');
                 }
             });
         }
@@ -43,15 +51,23 @@ class ProjectController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('title', 'like', '%' . $request->search . '%')
-                    ->orWhere('program', 'like', '%' . $request->search . '%')
-                    ->orWhere('county', 'like', '%' . $request->search . '%');
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                    ->orWhere('program', 'like', '%' . $search . '%')
+                    ->orWhere('county', 'like', '%' . $search . '%')
+                    ->orWhereHas('categories', function ($catQ) use ($search) {
+                        $catQ->where('name', 'like', '%' . $search . '%');
+                    });
             });
         }
 
         $projects = $query->orderBy('year', 'desc')->orderBy('title', 'asc')->paginate(24);
-        $categories = Category::all();
+        $programs = Program::orderBy('name')->pluck('name');
+        if ($programs->isEmpty()) {
+            $programs = Project::select('program')->distinct()->orderBy('program')->pluck('program');
+        }
+        $categories = Category::whereNotIn('name', $programs)->orderBy('name')->get();
         $years = CohortYear::orderBy('year', 'desc')->pluck('year');
         if ($years->isEmpty()) {
             $years = Project::select('year')->distinct()->orderBy('year', 'desc')->pluck('year');
@@ -60,18 +76,15 @@ class ProjectController extends Controller
         if ($counties->isEmpty()) {
             $counties = collect(['Fairfield', 'Hartford', 'Litchfield', 'Middlesex', 'New Haven', 'New London', 'Tolland', 'Windham', 'Statewide']);
         }
-        $programs = Program::orderBy('name')->pluck('name');
-        if ($programs->isEmpty()) {
-            $programs = Project::select('program')->distinct()->orderBy('program')->pluck('program');
-        }
 
         return view('projects.index', compact('projects', 'categories', 'years', 'counties', 'programs'));
     }
 
     public function create()
     {
-        $categories = Category::orderBy('name')->get();
         $programs = Program::orderBy('name')->get();
+        $programNames = $programs->pluck('name');
+        $categories = Category::whereNotIn('name', $programNames)->orderBy('name')->get();
         $years = CohortYear::orderBy('year', 'desc')->pluck('year');
         return view('projects.create', compact('categories', 'programs', 'years'));
     }
@@ -191,8 +204,9 @@ class ProjectController extends Controller
 
     public function edit(Project $project)
     {
-        $categories = Category::orderBy('name')->get();
         $programs = Program::orderBy('name')->get();
+        $programNames = $programs->pluck('name');
+        $categories = Category::whereNotIn('name', $programNames)->orderBy('name')->get();
         $years = CohortYear::orderBy('year', 'desc')->pluck('year');
         return view('projects.edit', compact('project', 'categories', 'programs', 'years'));
     }
