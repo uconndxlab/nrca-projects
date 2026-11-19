@@ -76,100 +76,126 @@
 
     <div class="card-body p-3">
         @if($activeTab === 'projects')
-            <form method="GET" action="{{ route('admin') }}" class="row g-2 mb-3">
-                <input type="hidden" name="tab" value="projects">
-                <div class="col-md-4">
-                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Search title, program, county..." value="{{ request('search') }}">
-                </div>
-                <div class="col-md-3">
-                    <select name="program" class="form-select form-select-sm">
-                        <option value="">All Programs</option>
-                        @foreach ($programs as $prog)
-                            <option value="{{ $prog->name }}" {{ request('program') == $prog->name ? 'selected' : '' }}>{{ $prog->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <select name="year" class="form-select form-select-sm">
-                        <option value="">All Years</option>
-                        @foreach ($years as $yr)
-                            <option value="{{ $yr->year }}" {{ request('year') == $yr->year ? 'selected' : '' }}>{{ $yr->year }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3 d-flex gap-1">
-                    <button type="submit" class="btn btn-sm btn-primary flex-fill">Filter</button>
-                    @if(request()->hasAny(['search', 'program', 'year']))
-                        <a href="{{ route('admin', ['tab' => 'projects']) }}" class="btn btn-sm btn-outline-secondary">Reset</a>
-                    @endif
-                </div>
-            </form>
 
-            <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Title</th>
-                            <th>Program</th>
-                            <th>Year</th>
-                            <th>Counties</th>
-                            <th>Tags</th>
-                            <th class="text-end" style="width: 140px;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($projects as $project)
-                            <tr>
-                                <td>
-                                    @php
-                                        $websiteUrl = $project->primary_product_url ?: ($project->secondary_product_url ?: $project->third_download_url);
-                                    @endphp
+            @if($projectsByYear->isEmpty())
+                <div class="alert alert-light border text-center py-4 mb-0 text-muted">
+                    No projects found matching the criteria.
+                </div>
+            @else
+                <div class="accordion" id="projectsYearAccordion">
+                    @foreach($projectsByYear as $year => $yearProjects)
+                        @php
+                            $collapseId = 'collapseYear_' . Str::slug($year);
+                            $isFirst = $loop->first;
+                        @endphp
+                        <div class="accordion-item mb-2 border rounded-3 overflow-hidden shadow-sm">
+                            <h2 class="accordion-header" id="heading_{{ $collapseId }}">
+                                <button class="accordion-button {{ $isFirst ? '' : 'collapsed' }} py-2 px-3 bg-light fw-bold text-dark"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#{{ $collapseId }}"
+                                        aria-expanded="{{ $isFirst ? 'true' : 'false' }}"
+                                        aria-controls="{{ $collapseId }}">
+                                    <div class="d-flex align-items-center justify-content-between w-100 me-3">
+                                        <span>
+                                            <!-- <i class="bi bi-calendar-event me-2 text-primary"></i> -->
+                                            {{ $year }}
+                                        </span>
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill fw-normal px-2 py-1">
+                                            {{ $yearProjects->count() }} {{ Str::plural('project', $yearProjects->count()) }}
+                                        </span>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="{{ $collapseId }}"
+                                 class="accordion-collapse collapse {{ $isFirst ? 'show' : '' }}"
+                                 aria-labelledby="heading_{{ $collapseId }}"
+                                 data-bs-parent="#projectsYearAccordion">
+                                <div class="accordion-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover align-middle mb-0">
+                                            <thead class="table-light small text-muted border-bottom">
+                                                <tr>
+                                                    <th class="ps-3 py-2" style="width: 48%;">Title</th>
+                                                    <th style="width: 14%;">Program</th>
+                                                    <th style="width: 22%;">Counties</th>
+                                                    <th class="text-end pe-3" style="width: 16%;">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($yearProjects as $project)
+                                                    <tr>
+                                                        <td class="ps-3 py-2">
+                                                            @php
+                                                                $websiteUrl = $project->primary_product_url ?: ($project->secondary_product_url ?: $project->third_download_url);
+                                                            @endphp
+                                                            @if($websiteUrl)
+                                                                <a href="{{ $websiteUrl }}" target="_blank" rel="noopener noreferrer" class="fw-semibold text-dark text-decoration-none hover-underline" title="View external media">
+                                                                    {{ $project->title }}
+                                                                    <i class="bi bi-box-arrow-up-right small text-muted ms-1" style="font-size: 0.75rem;"></i>
+                                                                </a>
+                                                            @else
+                                                                <span class="fw-semibold text-dark">{{ $project->title }}</span>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($project->program)
+                                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2">{{ $project->program }}</span>
+                                                            @else
+                                                                <span class="text-muted small">—</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="small text-muted">
+                                                            {{ $project->county ?: '—' }}
+                                                        </td>
+                                                        <td class="text-end pe-3">
+                                                            <div class="btn-group btn-group-sm">
+                                                                <a href="{{ route('projects.edit', $project) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Edit project">
+                                                                    Edit
+                                                                </a>
+                                                                <form action="{{ route('projects.destroy', $project) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete project \'{{ addslashes($project->title) }}\'?');">
+                                                                    @csrf
+                                                                    @method('DELETE')
+                                                                    <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Delete project">
+                                                                        <i class="bi bi-trash"></i>
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
 
-                                    @if($websiteUrl)
-                                        <a href="{{ $websiteUrl }}" target="_blank" rel="noopener noreferrer" class="fw-bold text-decoration-underline text-dark" title="Open website">
-                                            {{ $project->title }}
-                                        </a>
-                                    @else
-                                        <span class="fw-bold">{{ $project->title }}</span>
-                                    @endif
-
-                                    @if($project->primary_product)
-                                        <div class="mt-1">
-                                            <a href="{{ asset('storage/' . $project->primary_product) }}" target="_blank" class="small text-muted text-decoration-none">Poster PDF</a>
-                                        </div>
-                                    @endif
-                                </td>
-                                <td><span class="badge bg-secondary">{{ $project->program ?? 'N/A' }}</span></td>
-                                <td>{{ $project->year }}</td>
-                                <td>{{ $project->county ?: 'N/A' }}</td>
-                                <td>
-                                    @forelse ($project->categories as $category)
-                                        <span class="badge bg-light text-dark border">{{ $category->name }}</span>
-                                    @empty
-                                        <span class="text-muted small">-</span>
-                                    @endforelse
-                                </td>
-                                <td class="text-end">
-                                    <a href="{{ route('projects.edit', $project) }}" class="btn btn-sm btn-outline-primary py-0 px-2">Edit</a>
-                                    <form action="{{ route('projects.destroy', $project) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this project?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2">Delete</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-3 text-muted">No projects found.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="d-flex justify-content-center mt-3">
-                {{ $projects->appends(['tab' => 'projects'])->links() }}
-            </div>
+            <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const toggleBtn = document.getElementById('toggleAllYearsBtn');
+                if (!toggleBtn) return;
+                let allExpanded = false;
+                toggleBtn.addEventListener('click', function () {
+                    const collapses = document.querySelectorAll('#projectsYearAccordion .accordion-collapse');
+                    allExpanded = !allExpanded;
+                    collapses.forEach(el => {
+                        const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+                        if (allExpanded) {
+                            bsCollapse.show();
+                        } else {
+                            bsCollapse.hide();
+                        }
+                    });
+                    toggleBtn.innerHTML = allExpanded
+                        ? '<i class="bi bi-arrows-collapse me-1"></i>Collapse All'
+                        : '<i class="bi bi-arrows-expand me-1"></i>Expand All';
+                });
+            });
+            </script>
 
         @elseif($activeTab === 'programs')
             <div class="card bg-light border-0 mb-4 p-3">
