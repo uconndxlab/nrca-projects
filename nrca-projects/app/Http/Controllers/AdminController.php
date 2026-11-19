@@ -20,34 +20,14 @@ class AdminController extends Controller
     {
         $activeTab = $request->input('tab', 'projects');
 
-        // Projects Query for Admin Table
-        $projectQuery = Project::with('categories');
-
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $projectQuery->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('program', 'like', "%{$search}%")
-                  ->orWhere('county', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('program')) {
-            $projectQuery->where('program', $request->input('program'));
-        }
-
-        if ($request->filled('year')) {
-            $projectQuery->where('year', $request->input('year'));
-        }
-
-        if ($request->filled('category')) {
-            $catId = $request->input('category');
-            $projectQuery->whereHas('categories', function ($q) use ($catId) {
-                $q->where('categories.id', $catId);
-            });
-        }
-
-        $projects = $projectQuery->orderBy('year', 'desc')->orderBy('title', 'asc')->paginate(20, ['*'], 'projects_page');
+        // Projects grouped by Year for Admin Bird's-Eye View
+        $allProjects = Project::with('categories')
+            ->orderBy('year', 'desc')
+            ->orderBy('title', 'asc')
+            ->get();
+        $projectsByYear = $allProjects->groupBy(function ($project) {
+            return $project->year ?: 'Unspecified Year';
+        });
 
         // Programs with project count
         $programs = Program::orderBy('name', 'asc')->get()->map(function ($p) {
@@ -86,7 +66,7 @@ class AdminController extends Controller
         $managedCounties = $counties;
 
         return view('admin.index', compact(
-            'projects',
+            'projectsByYear',
             'programs',
             'categories',
             'years',
