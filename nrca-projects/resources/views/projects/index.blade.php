@@ -2,34 +2,40 @@
 @section('title', 'Projects')
 
 @section('content')
-    {{-- Top Summary & Admin Controls --}}
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <p class="text-muted small mb-0">Showing {{ $projects->firstItem() ?? 0 }}–{{ $projects->lastItem() ?? 0 }} of {{ $projects->total() }} projects</p>
-        </div>
-        @can('admin')
-            <div class="d-flex align-items-center gap-2 standalone-only">
-                <a href="{{ route('projects.create') }}" class="btn btn-sm btn-nrca-orange" hx-boost="false">
-                    Add Project
-                </a>
-                <a href="{{ route('admin') }}" class="btn btn-sm btn-nrca-orange" hx-boost="false">
-                    Manage
-                </a>
-            </div>
-        @endcan
-    </div>
-
     {{-- Dynamic Filter & Showcase Container --}}
     <div id="projects-container" hx-boost="true" hx-target="#projects-container" hx-select="#projects-container" hx-swap="outerHTML" hx-push-url="true">
+        {{-- Top Summary & Admin Controls --}}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <p class="text-muted small mb-0">Showing {{ $projects->firstItem() ?? 0 }}–{{ $projects->lastItem() ?? 0 }} of {{ $projects->total() }} projects</p>
+            </div>
+            @can('admin')
+                <div class="d-flex align-items-center gap-2 standalone-only">
+                    <a href="{{ route('projects.create') }}" class="btn btn-sm btn-nrca-orange" hx-boost="false">
+                        Add Project
+                    </a>
+                    <a href="{{ route('admin') }}" class="btn btn-sm btn-nrca-orange" hx-boost="false">
+                        Manage
+                    </a>
+                </div>
+            @endcan
+        </div>
+
         {{-- Filter Bars with Right-Aligned Minimal Pagination on the Same Row --}}
         <div class="filter-toolbar mb-4">
-            <form hx-boost="true" hx-trigger="change, keyup delay:300ms from:#search-input" hx-target="#projects-container"
+            <form hx-boost="true" hx-trigger="submit" hx-target="#projects-container"
                 hx-select="#projects-container" hx-swap="outerHTML" hx-sync="this:replace" hx-push-url="true" method="GET"
-                action="{{ route('projects.index') }}" class="m-0">
+                action="{{ route('projects.index') }}" class="m-0"
+                onsubmit="if (!this.querySelector('#search-input').value.trim() && !this.querySelector('[name=program]').value && !this.querySelector('[name=category]').value && !this.querySelector('[name=year]').value && !this.querySelector('[name=county]').value) { event.preventDefault(); return false; }">
+                @if(request()->has('embedded'))
+                    <input type="hidden" name="embedded" value="{{ request('embedded') }}">
+                @elseif(request()->has('embed'))
+                    <input type="hidden" name="embed" value="{{ request('embed') }}">
+                @endif
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                    {{-- Filter Dropdowns --}}
+                    {{-- Filter Dropdowns & Search --}}
                     <div class="d-flex flex-wrap align-items-center gap-2">
-                        <div style="width: 155px;">
+                        <div style="width: 160px;">
                             <input type="text" id="search-input" name="search" class="form-control form-control-sm"
                                 placeholder="Search..." value="{{ request('search') }}">
                         </div>
@@ -44,7 +50,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div style="width: 108px;">
+                        <div style="width: 112px;">
                             <select name="category" class="form-select form-select-sm filter-bar-select">
                                 <option value="">All Topics</option>
                                 @foreach ($categories as $cat)
@@ -53,7 +59,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div style="width: 86px;">
+                        <div style="width: 90px;">
                             <select name="year" class="form-select form-select-sm filter-bar-select">
                                 <option value="">All Years</option>
                                 @foreach ($years as $year)
@@ -64,7 +70,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div style="width: 108px;">
+                        <div style="width: 112px;">
                             <select name="county" class="form-select form-select-sm filter-bar-select">
                                 <option value="">All Counties</option>
                                 @foreach ($counties as $county)
@@ -75,9 +81,12 @@
                                 @endforeach
                             </select>
                         </div>
-                        @if(request()->hasAny(['search', 'program', 'category', 'year', 'county']))
+                        <button type="submit" class="btn btn-sm btn-primary py-1 px-3" style="font-size: 0.82rem;">
+                            Apply
+                        </button>
+                        @if(request()->filled('search') || request()->filled('program') || request()->filled('category') || request()->filled('year') || request()->filled('county'))
                             <div>
-                                <a href="{{ route('projects.index') }}" class="btn btn-sm btn-outline-secondary py-1 px-2 text-nowrap" style="font-size: 0.8rem;">Reset</a>
+                                <a href="{{ route('projects.index', array_filter(['embedded' => request('embedded'), 'embed' => request('embed')])) }}" class="btn btn-sm btn-outline-secondary py-1 px-2 text-nowrap" style="font-size: 0.8rem;">Reset</a>
                             </div>
                         @endif
                     </div>
