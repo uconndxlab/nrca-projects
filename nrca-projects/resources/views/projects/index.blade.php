@@ -2,30 +2,31 @@
 @section('title', 'Projects')
 
 @section('content')
-    {{-- Top Summary & Admin Controls --}}
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <p class="text-muted small mb-0">Showing {{ $projects->firstItem() ?? 0 }}–{{ $projects->lastItem() ?? 0 }} of {{ $projects->total() }} projects</p>
-        </div>
-        @can('admin')
-            <div class="d-flex align-items-center gap-2 standalone-only">
-                <a href="{{ route('projects.create') }}" class="btn btn-sm btn-nrca-orange" hx-boost="false">
-                    Add Project
-                </a>
-                <a href="{{ route('admin') }}" class="btn btn-sm btn-nrca-orange" hx-boost="false">
-                    Manage
-                </a>
-            </div>
-        @endcan
-    </div>
-
     {{-- Dynamic Filter & Showcase Container --}}
     <div id="projects-container" hx-boost="true" hx-target="#projects-container" hx-select="#projects-container" hx-swap="outerHTML" hx-push-url="true">
+        {{-- Top Summary & Admin Controls --}}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <p class="text-muted small mb-0">Showing {{ $projects->firstItem() ?? 0 }}–{{ $projects->lastItem() ?? 0 }} of {{ $projects->total() }} projects</p>
+            </div>
+            @can('admin')
+                <div class="d-flex align-items-center gap-2 standalone-only">
+                    <a href="{{ route('projects.create') }}" class="btn btn-sm btn-nrca-orange" hx-boost="false">
+                        Add Project
+                    </a>
+                    <a href="{{ route('admin') }}" class="btn btn-sm btn-nrca-orange" hx-boost="false">
+                        Manage
+                    </a>
+                </div>
+            @endcan
+        </div>
+
         {{-- Filter Bars with Right-Aligned Minimal Pagination on the Same Row --}}
         <div class="filter-toolbar mb-4">
             <form hx-boost="true" hx-trigger="submit" hx-target="#projects-container"
                 hx-select="#projects-container" hx-swap="outerHTML" hx-sync="this:replace" hx-push-url="true" method="GET"
-                action="{{ route('projects.index') }}" class="m-0">
+                action="{{ route('projects.index') }}" class="m-0"
+                onsubmit="if (!this.querySelector('#search-input').value.trim() && !this.querySelector('[name=program]').value && !this.querySelector('[name=category]').value && !this.querySelector('[name=year]').value && !this.querySelector('[name=county]').value) { event.preventDefault(); return false; }">
                 @if(request()->has('embedded'))
                     <input type="hidden" name="embedded" value="{{ request('embedded') }}">
                 @elseif(request()->has('embed'))
@@ -83,7 +84,7 @@
                         <button type="submit" class="btn btn-sm btn-primary py-1 px-3" style="font-size: 0.82rem;">
                             Apply
                         </button>
-                        @if(request()->hasAny(['search', 'program', 'category', 'year', 'county']))
+                        @if(request()->filled('search') || request()->filled('program') || request()->filled('category') || request()->filled('year') || request()->filled('county'))
                             <div>
                                 <a href="{{ route('projects.index', array_filter(['embedded' => request('embedded'), 'embed' => request('embed')])) }}" class="btn btn-sm btn-outline-secondary py-1 px-2 text-nowrap" style="font-size: 0.8rem;">Reset</a>
                             </div>

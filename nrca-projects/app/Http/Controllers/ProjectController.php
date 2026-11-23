@@ -51,15 +51,31 @@ class ProjectController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = trim($request->search);
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', '%' . $search . '%')
-                    ->orWhere('program', 'like', '%' . $search . '%')
-                    ->orWhere('county', 'like', '%' . $search . '%')
-                    ->orWhereHas('categories', function ($catQ) use ($search) {
-                        $catQ->where('name', 'like', '%' . $search . '%');
+            $words = preg_split('/\s+/', trim($request->search), -1, PREG_SPLIT_NO_EMPTY);
+            if (!empty($words)) {
+                $prefixMatches = function ($builder, $column, $term) {
+                    $builder->where(function ($w) use ($column, $term) {
+                        $w->where($column, 'like', $term . '%')
+                            ->orWhere($column, 'like', '% ' . $term . '%')
+                            ->orWhere($column, 'like', '%-' . $term . '%')
+                            ->orWhere($column, 'like', '%(' . $term . '%')
+                            ->orWhere($column, 'like', '%/' . $term . '%');
                     });
-            });
+                };
+
+                foreach ($words as $word) {
+                    $query->where(function ($q) use ($word, $prefixMatches) {
+                        $prefixMatches($q, 'title', $word);
+                        $q->orWhere(function ($s2) use ($word, $prefixMatches) {
+                            $prefixMatches($s2, 'program', $word);
+                        })->orWhere(function ($s2) use ($word, $prefixMatches) {
+                            $prefixMatches($s2, 'county', $word);
+                        })->orWhereHas('categories', function ($catQ) use ($word, $prefixMatches) {
+                            $prefixMatches($catQ, 'categories.name', $word);
+                        });
+                    });
+                }
+            }
         }
 
         $projects = $query->orderBy('year', 'desc')->orderBy('title', 'asc')->paginate(24);
